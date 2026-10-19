@@ -4,10 +4,13 @@ Implemented: Python-connected UI, adaptive policy, official-harness adapter, con
 entity selection, bounded sessions, error handling, JSON evidence, local ratings,
 randomized comparison strategies, analysis, tests, CI definition and deployment files.
 
-Verified locally: automated tests; JavaScript syntax; synthetic API lifecycle.
-Browser verification and final test totals are reported in the delivery message.
+Verified: 22 automated tests and JavaScript syntax locally and in GitHub Actions;
+synthetic API lifecycle; default and research browser flows, skips, rating control,
+restart and session deletion. GitHub Actions also built the Docker image, checked
+the installed official harness command, and smoke-tested the container API.
+Passing run: https://github.com/Nourhan832/tasteprobe/actions/runs/39229755303
 
-Not verified: event credential, live Qloo responses and coverage, Docker build,
+Not verified: event credential, live Qloo responses and coverage,
 externally hosted app, and real-user improvement. No prize prediction is made.
 
 External dependencies: Qloo access email, working hosting publication, and consenting
