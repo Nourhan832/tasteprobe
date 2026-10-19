@@ -1,0 +1,167 @@
+{
+  "source": "synthetic-heldout-stress-test",
+  "seed": 832,
+  "trials_per_scenario": 400,
+  "question_candidates": 12,
+  "disjoint_evaluation_candidates": 12,
+  "interpretation": "Lower regret is better under generated utilities. Intervals describe simulation variability, not human outcomes. Negative adaptive-minus-fixed regret favors adaptive.",
+  "limitations": "Invented profiles and utilities. No real users, Qloo calls, external validity, or calibrated personal confidence.",
+  "scenarios": {
+    "matched": {
+      "methods": {
+        "adaptive": {
+          "mean_regret": 0.10032357252104257,
+          "mean_utility": 0.741554330439667,
+          "mean_entropy": 1.36822609897509,
+          "mean_questions": 3,
+          "mean_skips": 0
+        },
+        "fixed": {
+          "mean_regret": 0.13698083927075203,
+          "mean_utility": 0.7048970636899576,
+          "mean_entropy": 1.643007760160296,
+          "mean_questions": 3,
+          "mean_skips": 0
+        },
+        "random": {
+          "mean_regret": 0.13762054205318341,
+          "mean_utility": 0.7042573609075262,
+          "mean_entropy": 1.6401014152301558,
+          "mean_questions": 3,
+          "mean_skips": 0
+        },
+        "immediate": {
+          "mean_regret": 0.17493877234786925,
+          "mean_utility": 0.6669391306128404,
+          "mean_entropy": 2.0,
+          "mean_questions": 0,
+          "mean_skips": 0
+        }
+      },
+      "adaptive_minus_fixed_regret": {
+        "mean": -0.03665726674970946,
+        "approximate_95pct_monte_carlo_interval": [
+          -0.05371800512029151,
+          -0.019596528379127415
+        ]
+      }
+    },
+    "mixed_tastes": {
+      "methods": {
+        "adaptive": {
+          "mean_regret": 0.07844937783611329,
+          "mean_utility": 0.6646963810449302,
+          "mean_entropy": 1.4040694256267578,
+          "mean_questions": 3,
+          "mean_skips": 0
+        },
+        "fixed": {
+          "mean_regret": 0.08359154486245687,
+          "mean_utility": 0.6595542140185866,
+          "mean_entropy": 1.6549192698251511,
+          "mean_questions": 3,
+          "mean_skips": 0
+        },
+        "random": {
+          "mean_regret": 0.07981127263021019,
+          "mean_utility": 0.6633344862508334,
+          "mean_entropy": 1.6579331979041503,
+          "mean_questions": 3,
+          "mean_skips": 0
+        },
+        "immediate": {
+          "mean_regret": 0.07070015358941203,
+          "mean_utility": 0.6724456052916314,
+          "mean_entropy": 2.0,
+          "mean_questions": 0,
+          "mean_skips": 0
+        }
+      },
+      "adaptive_minus_fixed_regret": {
+        "mean": -0.00514216702634359,
+        "approximate_95pct_monte_carlo_interval": [
+          -0.014435324247993566,
+          0.004150990195306386
+        ]
+      }
+    },
+    "reversed_tastes": {
+      "methods": {
+        "adaptive": {
+          "mean_regret": 0.3987675122215089,
+          "mean_utility": 0.44354055530913267,
+          "mean_entropy": 1.317999910389128,
+          "mean_questions": 3,
+          "mean_skips": 0
+        },
+        "fixed": {
+          "mean_regret": 0.4329287437546651,
+          "mean_utility": 0.40937932377597647,
+          "mean_entropy": 1.6131787853164916,
+          "mean_questions": 3,
+          "mean_skips": 0
+        },
+        "random": {
+          "mean_regret": 0.4311290941362115,
+          "mean_utility": 0.4111789733944301,
+          "mean_entropy": 1.6026693254384035,
+          "mean_questions": 3,
+          "mean_skips": 0
+        },
+        "immediate": {
+          "mean_regret": 0.5225826353663545,
+          "mean_utility": 0.319725432164287,
+          "mean_entropy": 2.0,
+          "mean_questions": 0,
+          "mean_skips": 0
+        }
+      },
+      "adaptive_minus_fixed_regret": {
+        "mean": -0.03416123153315618,
+        "approximate_95pct_monte_carlo_interval": [
+          -0.04911834807098202,
+          -0.01920411499533034
+        ]
+      }
+    },
+    "frequent_skips": {
+      "methods": {
+        "adaptive": {
+          "mean_regret": 0.1224170243214274,
+          "mean_utility": 0.7167479870593211,
+          "mean_entropy": 1.5808860003797474,
+          "mean_questions": 3,
+          "mean_skips": 1.11
+        },
+        "fixed": {
+          "mean_regret": 0.15941514692162065,
+          "mean_utility": 0.6797498644591278,
+          "mean_entropy": 1.774661426566895,
+          "mean_questions": 3,
+          "mean_skips": 1.1575
+        },
+        "random": {
+          "mean_regret": 0.14564928772541377,
+          "mean_utility": 0.6935157236553346,
+          "mean_entropy": 1.7753828605837698,
+          "mean_questions": 3,
+          "mean_skips": 1.1575
+        },
+        "immediate": {
+          "mean_regret": 0.17408715114492837,
+          "mean_utility": 0.66507786023582,
+          "mean_entropy": 2.0,
+          "mean_questions": 0,
+          "mean_skips": 0
+        }
+      },
+      "adaptive_minus_fixed_regret": {
+        "mean": -0.036998122600193244,
+        "approximate_95pct_monte_carlo_interval": [
+          -0.05180440406047329,
+          -0.022191841139913192
+        ]
+      }
+    }
+  }
+}

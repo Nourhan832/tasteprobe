@@ -4,6 +4,7 @@ Weights and information gain describe this model, not calibrated human confidenc
 Missing evidence is kept unknown. No demographic inference is used.
 """
 import math
+import copy
 from dataclasses import dataclass, field
 
 
@@ -88,3 +89,23 @@ class Probe:
             result.append({"entity_id": candidate, "label": self.labels.get(candidate, candidate),
                            "model_utility": round(score, 5)})
         return sorted(result, key=lambda r: (-r["model_utility"], r["entity_id"]))[:take]
+
+    def undo(self):
+        """Reconstruct exactly from the retained answers; no rounded-weight drift."""
+        if not self.history:
+            raise ValueError("There is no answer to change")
+        retained = list(self.history[:-1])
+        self.weights = [1 / len(self.profiles)] * len(self.profiles)
+        self.asked.clear()
+        self.history.clear()
+        for row in retained:
+            self.answer(row["entity_id"], row["answer"])
+
+    def previews(self, candidate, take=3):
+        """Illustrate model consequences without mutating the actual session."""
+        result = {}
+        for answer in ("like", "dislike"):
+            alternative = copy.deepcopy(self)
+            alternative.answer(candidate, answer)
+            result[answer] = alternative.recommendations(take)
+        return result

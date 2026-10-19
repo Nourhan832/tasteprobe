@@ -31,6 +31,7 @@ Ratings are held in the browser, exported only on request, and not collected in 
 python -m unittest discover -s tests -v
 node --check dist/app.js
 python benchmark.py
+python stress_benchmark.py
 ```
 
 ## Live Qloo setup
@@ -75,6 +76,15 @@ Model weights are not calibrated human confidence, identity, or enjoyment probab
 Rank normalization is heuristic and raw Qloo scores are not compared across requests.
 Only shared candidates are eligible, which can limit coverage and novelty.
 
+## Evidence and answer correction
+
+Each recommendation now retains separate per-anchor rank evidence and explainability
+metadata. In normal discovery, expandable panels show how yes/no could change the
+shortlist without changing session state. Users can correct the last answer; weights
+are rebuilt from the retained history. Correction counts are included in exports.
+Research sessions disable previews and corrections to avoid changing the comparison.
+Qloo request traces include retrieval timestamps and durations, excluding credentials.
+
 ## Evaluation
 
 The optional research flow randomly assigns adaptive, fixed, random, or immediate
@@ -98,6 +108,11 @@ Do not report causal benefit or statistical significance from this output.
 sanity check. The simulated responder follows the model family used by the agent.
 Lower model entropy does not prove recommendation improvement or real-user satisfaction.
 See `docs/EVALUATION.md` for the real pilot protocol.
+
+The newer `stress_benchmark.py` evaluates disjoint, unasked candidates under matched,
+mixed, reversed, and frequent-skip scenarios. Full generated results are in
+`stress-results.json`; `docs/STRESS_FINDINGS.md` explains the mixed-taste limitation.
+These generated experiments do not establish real-user benefit.
 
 ## Deploy
 
@@ -128,6 +143,7 @@ been completed. The full Python app cannot run on static-only hosting.
 - POST /api/answer: session_id, current entity_id, answer (like/dislike/skip).
 - POST /api/state: session_id, returns current session.
 - POST /api/delete: session_id, deletes session.
+- POST /api/undo: session_id, reverses the last answer outside research mode.
 
 All writes require same-origin JSON. Treat the unpredictable session ID as private;
 it is excluded from exported evidence. Static serving is an explicit file allowlist.

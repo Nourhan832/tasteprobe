@@ -15,9 +15,11 @@ class Session:
     metadata: dict
     source: str
     audit: list
+    evidence: dict = field(default_factory=dict)
     method: str = "adaptive"
     order: list = field(default_factory=list)
     study: bool = False
+    undo_count: int = 0
     created: float = field(default_factory=time.monotonic)
     lock: threading.Lock = field(default_factory=threading.Lock)
 
@@ -58,6 +60,12 @@ class Service:
     def create(self, mode="demo", seeds=None, study=False):
         if mode == "demo":
             profiles, metadata, source, audit = copy.deepcopy(PROFILES), copy.deepcopy(METADATA), "synthetic-fixture", []
+            evidence = {}
+            for anchor, values in profiles.items():
+                ordered = sorted(values, key=lambda c: (-values[c], c))
+                for rank, candidate in enumerate(ordered, 1):
+                    evidence.setdefault(candidate, {})[anchor] = {"returned_rank": rank, "ranking_size": len(ordered),
+                        "rank_utility": values[candidate], "source": "synthetic-fixture", "explainability": None}
         elif mode == "live":
             if not isinstance(seeds, list) or not 2 <= len(seeds) <= 4 or any(not isinstance(s, str) for s in seeds):
                 raise ValueError("Confirm 2 to 4 favorites from search")
@@ -68,17 +76,20 @@ class Service:
                 if any(seed not in self.verified for seed in seeds):
                     raise ValueError("Search and confirm each favorite again; selection expired or unverified")
                 names = {seed: self.verified[seed][0]["name"] for seed in seeds}
-            client, profiles, metadata = self.factory(), {}, {}
+            client, profiles, metadata, evidence = self.factory(), {}, {}, {}
             for index, seed in enumerate(seeds):
                 response = client.insights([seed], take=50)
                 profile, _ = rank_profile(response)
                 # Known seed favorites must not be asked about or recommended.
-                profiles[f"Anchor {index+1}: {names[seed]}"] = {k: v for k, v in profile.items() if k not in seeds}
-                for item in response["results"]["entities"]:
+                anchor = f"Anchor {index+1}: {names[seed]}"
+                profiles[anchor] = {k: v for k, v in profile.items() if k not in seeds}
+                for rank, item in enumerate(response["results"]["entities"], 1):
                     identifier = item["entity_id"]
+                    explanation = item.get("query", {}).get("explainability") if isinstance(item.get("query"), dict) else None
+                    evidence.setdefault(identifier, {})[anchor] = {"returned_rank": rank, "ranking_size": len(profile),
+                        "rank_utility": profile[identifier], "source": "qloo-live", "explainability": explanation}
                     metadata[identifier] = {"entity_id": identifier, "name": item.get("name", identifier),
-                                            "subtitle": "Qloo movie candidate", "description": "", 
-                                            "explainability": item.get("query", {}).get("explainability") if isinstance(item.get("query"), dict) else None}
+                                            "subtitle": "Qloo movie candidate", "description": ""}
             source, audit = "qloo-live", client.audit
         else:
             raise ValueError("Mode must be demo or live")
@@ -87,7 +98,7 @@ class Service:
         order = sorted(set.intersection(*(set(p) for p in profiles.values())))
         if method == "random":
             secrets.SystemRandom().shuffle(order)
-        session = Session(probe, metadata, source, audit, method=method, order=order, study=study)
+        session = Session(probe, metadata, source, audit, evidence=evidence, method=method, order=order, study=study)
         with self.lock:
             self.prune()
             if len(self.sessions) >= self.max_sessions:
@@ -122,13 +133,17 @@ class Service:
         question = self._next(session)
         if question["action"] == "ask":
             question["entity"] = session.metadata[question["entity_id"]]
+            if not session.study:
+                question["answer_previews"] = probe.previews(question["entity_id"])
         common = set.intersection(*(set(p) for p in probe.profiles.values()))
         return {"session_id": identifier, "source": session.source, "budget": probe.budget,
                 "method": session.method, "study": session.study,
+                "undo_count": session.undo_count,
                 "answered": len(probe.history), "next": question,
                 "weights": dict(zip(probe.profiles, probe.weights)),
                 "history": [{**row, "name": probe.labels[row["entity_id"]]} for row in probe.history],
-                "recommendations": [{**r, "entity": session.metadata[r["entity_id"]]} for r in probe.recommendations(3)],
+                "recommendations": [{**r, "entity": session.metadata[r["entity_id"]],
+                                     "evidence": session.evidence.get(r["entity_id"], {})} for r in probe.recommendations(3)],
                 "evidence_coverage": {"shared_candidates": len(common), "profile_candidates": {k: len(v) for k, v in probe.profiles.items()}},
                 "retrieval": session.audit,
                 "notice": "Model weights and rank utilities are experimental, not calibrated enjoyment probabilities."}
@@ -150,3 +165,12 @@ class Service:
     def delete(self, identifier):
         with self.lock:
             self.sessions.pop(identifier, None)
+
+    def undo(self, identifier):
+        session = self._get(identifier)
+        with session.lock:
+            if session.study:
+                raise ValueError("Changing answers is disabled in research sessions to preserve the comparison")
+            session.probe.undo()
+            session.undo_count += 1
+            return self._state(identifier, session)

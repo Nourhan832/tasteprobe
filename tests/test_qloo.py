@@ -13,12 +13,15 @@ class QlooTests(unittest.TestCase):
     def test_harness_search_keeps_key_out_of_arguments(self):
         with self.environment(), patch("qloo.shutil.which", return_value="/usr/bin/qloo"), patch("qloo.subprocess.run") as run:
             run.return_value = subprocess.CompletedProcess([], 0, '[{"entity_id":"x","name":"X"}]', '')
-            data = Qloo().search("a query; not a shell", "movie")
+            client = Qloo()
+            data = client.search("a query; not a shell", "movie")
             args = run.call_args.args[0]
             self.assertEqual(args[:3], ["/usr/bin/qloo", "api", "search"])
             self.assertNotIn("test-only-not-a-real-key", " ".join(args))
             self.assertFalse(run.call_args.kwargs["shell"])
             self.assertEqual(data["results"][0]["name"], "X")
+            self.assertIn("retrieved_at", client.audit[0])
+            self.assertGreaterEqual(client.audit[0]["duration_ms"], 0)
 
     def test_upstream_errors_do_not_expose_output(self):
         with self.environment(), patch("qloo.shutil.which", return_value="/usr/bin/qloo"), patch("qloo.subprocess.run") as run:

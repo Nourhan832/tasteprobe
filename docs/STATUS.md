@@ -1,10 +1,11 @@
 # Delivery status
 
-Implemented: Python-connected UI, adaptive policy, official-harness adapter, confirmed
+Implemented: per-anchor evidence ledger, answer previews, answer correction,
+held-out/misspecified synthetic stress tests, and Python-connected UI, adaptive policy, official-harness adapter, confirmed
 entity selection, bounded sessions, error handling, JSON evidence, local ratings,
 randomized comparison strategies, analysis, tests, CI definition and deployment files.
 
-Verified: 22 automated tests and JavaScript syntax locally and in GitHub Actions;
+Verified: 27 automated tests and JavaScript syntax locally; the earlier 22-test version also passed GitHub Actions;
 synthetic API lifecycle; default and research browser flows, skips, rating control,
 restart and session deletion. GitHub Actions also built the Docker image, checked
 the installed official harness command, and smoke-tested the container API.

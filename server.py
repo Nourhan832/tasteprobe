@@ -123,6 +123,8 @@ class Handler(BaseHTTPRequestHandler):
             elif self.path == "/api/delete":
                 service.delete(body.get("session_id"))
                 data = {"deleted": True}
+            elif self.path == "/api/undo":
+                data = service.undo(body.get("session_id"))
             else:
                 return self.respond(404, {"error": "Not found"})
             self.respond(200, data)

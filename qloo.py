@@ -4,6 +4,8 @@ import os
 import uuid
 import shutil
 import subprocess
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
@@ -24,6 +26,11 @@ class Qloo:
         if not self.key and os.environ.get("QLOO_ENABLED") != "1":
             raise ValueError("Configure the event credential on the server or run qloo setup --qloo")
         self.audit = []
+        self.last_request_ms = None
+
+    def record(self, entry):
+        self.audit.append({**entry, "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                           "duration_ms": self.last_request_ms})
 
     def harness(self, command, args):
         entry = os.environ.get("QLOO_HARNESS_ENTRY")
@@ -40,8 +47,10 @@ class Qloo:
                 raise ValueError("Install @qloo/qloo-harness; on Windows set QLOO_HARNESS_ENTRY to its bin.js and QLOO_NODE to node.exe")
             prefix = [executable]
         try:
+            started = time.perf_counter()
             result = subprocess.run(prefix+["api", command]+args+["--json"],
                                     capture_output=True, text=True, timeout=45, shell=False)
+            self.last_request_ms = round((time.perf_counter()-started)*1000, 2)
         except subprocess.TimeoutExpired:
             raise TimeoutError("Qloo harness timed out") from None
         if result.returncode:
@@ -56,9 +65,11 @@ class Qloo:
     def get(self, route, params):
         req = Request(self.host + route + "?" + urlencode(params),
                       headers={"X-Api-Key": self.key, "Accept": "application/json"})
+        started = time.perf_counter()
         with urlopen(req, timeout=25) as response:
             data = json.load(response)
-        self.audit.append({"origin": self.host, "route": route, "parameters": params,
+        self.last_request_ms = round((time.perf_counter()-started)*1000, 2)
+        self.record({"origin": self.host, "route": route, "parameters": params,
                            "source": "qloo-live"})
         return data
 
@@ -67,7 +78,7 @@ class Qloo:
             raise ValueError("Supply a short search and movie, artist, or book type")
         if self.transport == "harness":
             data = self.harness("search", ["--query", text, "--type", kind, "--take", "10"])
-            self.audit.append({"source": "qloo-live", "transport": "official-harness", "route": "/search", "query": text, "kind": kind})
+            self.record({"source": "qloo-live", "transport": "official-harness", "route": "/search", "query": text, "kind": kind})
             return {"results": data}
         return self.get("/search", {"query": text, "types": "urn:entity:" + kind, "take": 10})
 
@@ -78,7 +89,7 @@ class Qloo:
         if self.transport == "harness":
             data = self.harness("insights", ["--type", kind, "--signal-entities", ",".join(ids),
                                 "--take", str(take), "--params", '{"feature.explainability":true}'])
-            self.audit.append({"source": "qloo-live", "transport": "official-harness", "route": "/v2/insights", "seeds": ids, "take": take})
+            self.record({"source": "qloo-live", "transport": "official-harness", "route": "/v2/insights", "seeds": ids, "take": take})
             return {"results": {"entities": data}}
         return self.get("/v2/insights", {"filter.type": "urn:entity:" + kind,
                         "signal.interests.entities": ",".join(ids), "take": take,
