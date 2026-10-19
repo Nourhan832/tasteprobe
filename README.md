@@ -102,7 +102,7 @@ See `docs/EVALUATION.md` for the real pilot protocol.
 ## Deploy
 
 The Dockerfile includes Python, Node 22 and the pinned official harness. Docker
-construction has not been executed in this workspace because Docker is unavailable.
+construction and the container API smoke test passed in GitHub Actions. Docker is unavailable in this local workspace.
 
 ```text
 docker build -t tasteprobe .
