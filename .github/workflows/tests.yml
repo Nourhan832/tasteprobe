@@ -13,3 +13,19 @@ jobs:
           node-version: '22'
       - run: python -m unittest discover -s tests -v
       - run: node --check dist/app.js
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t tasteprobe .
+      - name: Verify installed harness and container API
+        run: |
+          docker run --rm tasteprobe qloo api insights --help
+          docker run --detach --name tasteprobe-smoke -p 8080:8080 tasteprobe
+          for attempt in 1 2 3 4 5; do
+            if curl --fail http://127.0.0.1:8080/health; then break; fi
+            sleep 1
+          done
+          curl --fail --header 'Content-Type: application/json' --data '{"mode":"demo"}' http://127.0.0.1:8080/api/session
+      - if: always()
+        run: docker rm --force tasteprobe-smoke || true
