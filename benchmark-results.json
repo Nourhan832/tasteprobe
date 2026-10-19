@@ -1,0 +1,20 @@
+{
+  "source": "synthetic-model-matched",
+  "seed": 832,
+  "trials": 300,
+  "warning": "Tests model discrimination only. Not human satisfaction, recommendation lift, or Qloo performance.",
+  "methods": {
+    "adaptive": {
+      "mean_model_entropy_bits": 1.2158195132240683,
+      "mean_questions": 3.0
+    },
+    "fixed": {
+      "mean_model_entropy_bits": 1.6628277722866538,
+      "mean_questions": 3.0
+    },
+    "random": {
+      "mean_model_entropy_bits": 1.6427526677403186,
+      "mean_questions": 3.0
+    }
+  }
+}
