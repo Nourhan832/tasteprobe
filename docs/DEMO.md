@@ -1,25 +1,26 @@
-# Demonstration script
+# Judge walkthrough and optional recording
 
-## Synthetic walkthrough (available now)
-1. Open the Python-backed app and point out the synthetic-data label.
-2. Start sample discovery. The first question is Whiplash.
-3. Choose like. The next question becomes Her and the model favors a different anchor.
-4. Choose unfamiliar. The next question changes; weights stay the same.
-5. Choose dislike. The agent stops after three questions and lists unasked candidates.
-6. Rate a familiar final film. Export the session to inspect decisions and provenance.
-7. Restart; the previous server session is deleted.
+Public demo: https://tasteprobe.onrender.com/
+Source: https://github.com/Nourhan832/tasteprobe
 
-## Live demonstration (requires API access)
-1. Configure the official harness privately and start the backend.
-2. Search two favorites across music and movies. Confirm exact Qloo identities.
-3. Show real movie candidates from separate anchor queries, then the selected question.
-4. Answer and show how the next question changes under the model.
-5. Inspect source provenance; distinguish returned Qloo data from product interpretation.
-6. Show no-overlap or API-failure behavior without fabricating a successful result.
+Open the service before presenting so its free instance wakes. Use Live Qloo, confirm
+The Matrix (1999) and Interstellar (2014). Allow up to about a minute for ranking
+retrieval in the observed hosted setup; do not hide a failure or label synthetic data live.
 
-## Pitch
-Most recommendation agents guess too early. TasteProbe asks what it still needs to
-learn. Qloo supplies cross-domain cultural evidence; a bounded agent turns that
-evidence into informative questions, preference updates and an explicit stop decision.
-The product hypothesis is better discovery with less onboarding effort. The project
-includes a comparison workflow so this claim can be tested rather than asserted.
+For a repeatable scripted demonstration, answer like to V for Vendetta, skip Mad Max:
+Fury Road, then dislike Terminator 2 if those questions are selected. Actual Qloo
+rankings can change, so explain the visible question rather than forcing a title.
+Show that skip preserves weights, the three-question stop, and Inception's separate
+anchor rank evidence if returned. Export to show provenance; do not invent ratings.
+Label this a scripted demonstration, never user evaluation.
+
+90-second optional recording shot list:
+0–15s: Explain the new-user taste onboarding problem and show confirmed favorites.
+15–35s: Show the first question and explain why Qloo's separate rankings matter.
+35–55s: Show an answer, an unfamiliar skip, and the bounded stop.
+55–75s: Show final suggestions and per-anchor evidence; distinguish heuristic weights.
+75–90s: Show the consented comparison option and state that human benefit is unproven.
+
+Narration is in JUDGE_PITCH.md. Do not capture API key fields, hosting secrets,
+private notifications, or participant exports. If editing out a wait, label the cut.
+The current hackathon rules require a usable public demo, not a video.

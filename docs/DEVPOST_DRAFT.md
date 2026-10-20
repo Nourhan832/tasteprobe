@@ -17,8 +17,8 @@ responses preserve them. The agent stops after at most three questions or when
 evidence no longer supports an informative question.
 
 The interface includes a decision journal, source labels, session deletion and JSON
-evidence export. An optional research flow compares adaptive, fixed, random and
-immediate strategies. This is an experimental policy agent, with no LLM dependency.
+evidence export. An optional consented paired pilot compares adaptive and fixed questions using
+the same ranking snapshot, randomized round order, and disjoint unasked holdout films. This is an experimental policy agent, with no LLM dependency.
 
 ## How it is built
 Python standard-library backend, a buildless HTML/CSS/JavaScript UI, and the official
@@ -27,13 +27,13 @@ repository. Tests exercise the policy, request contracts, session handling, adap
 errors and evaluation imports. A Docker deployment definition is included.
 
 ## Why Qloo
-The proposed live experience uses cross-domain cultural rankings as the evidence
+The implemented live experience uses cross-domain cultural rankings as the evidence
 for competing taste anchors. Those rankings shape the question itself, not simply
 the wording of a final response. An LLM alone is not substituted for missing Qloo data.
 
 ## What is established today
 A full live movie walkthrough passed on October 20, 2026, including real Qloo
-rankings, adaptive questions, evidence and JSON export. The project has 33 passing
+rankings, adaptive questions, evidence and JSON export. The project has 37 passing
 local automated tests. See LIVE_VERIFICATION.md for the exact scripted scenario.
 No real-user recommendation uplift has been established.
 
@@ -43,11 +43,36 @@ and restrict questions to shared candidates. Normalized rank utility and the
 response likelihood model remain heuristics. Limited shared coverage is a visible
 failure mode rather than something the app hides.
 
+## Intended audience and impact
+TasteProbe targets discovery products whose new users provide a few favorites but
+lack a useful interaction history. Its proposed role is a short, inspectable taste
+onboarding layer. The movie app demonstrates that layer; an embeddable SDK and
+commercial integrations are future work. User benefit and customer demand remain
+unproven, and the pilot is designed to test stated recommendation fit.
+
+## What we learned
+A cultural graph does not automatically tell an agent what to ask. Separate anchor
+rankings let the policy choose an informative next question. Shared-candidate limits,
+heuristic likelihoods, and unfamiliar films also expose why the agent needs an
+explicit stop rule and transparent evidence rather than a confident explanation.
+
 ## Next
-Extend live scenario coverage, publish an externally accessible
-functional demo, then run a consenting pilot with equal budgets and user-rated
-outcomes. Update this draft with actual evidence and deployment links before submitting.
+Run the consenting exploratory paired pilot and report coverage, missing ratings,
+question counts, and descriptive paired differences. Extend to prospective viewing
+feedback before claiming better real-world enjoyment. Optimize upstream latency.
 
 ## Links
+Live application: https://tasteprobe.onrender.com/
 Public source: https://github.com/Nourhan832/tasteprobe
-Live application: PENDING — a localhost address does not satisfy the requirement.
+License: MIT (LICENSE at repository root).
+
+## Verification and limitations
+The externally hosted application passed a scripted live Qloo walkthrough on
+October 20, 2026: confirmed searches, two rankings, three questions including a skip,
+three final suggestions with provenance, and a JSON export without the session token.
+This is operational QA, not participant evaluation. No real-user uplift is claimed.
+Render's free tier can sleep; open the demo before presenting. Initial upstream
+ranking retrieval can take approximately one minute in the observed hosted scenario.
+
+Submission description prepared against the official criteria at https://qloo.devpost.com/.
+Video is optional under the current requirements. Final submission is not yet filed.
