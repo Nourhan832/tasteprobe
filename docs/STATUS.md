@@ -27,3 +27,7 @@ which never entered chat or source files. The first full retrieval exceeded the
 2 MB response guard. The adapter now requests only entity_id and name; 30 local
 tests pass. Full live retrieval needs a restarted launcher before verification.
 The local launcher now supports backend reloads without credential re-entry.
+
+The initial startup check later timed out. Startup no longer depends on Qloo
+availability: the local server starts immediately and checks access on demand.
+32 tests pass locally, including a regression test for startup independence.

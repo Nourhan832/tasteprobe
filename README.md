@@ -39,8 +39,10 @@ python stress_benchmark.py
 ## Live Qloo setup
 
 For this workspace, `python start_live.py` opens a hidden-input prompt for the existing
-event key, checks one Qloo entity search, then serves the app at
-http://127.0.0.1:8767 . The key stays in the launcher process environment and
+event key and serves the app immediately at
+http://127.0.0.1:8767 . Qloo access is checked on demand in the UI. A network timeout leaves the app
+running so you can retry without re-entering the key.
+The key stays in the launcher process environment and
 is removed when it exits; it is not written to source or a .env file.
 The launcher selects https://hackathon.api.qloo.com from the organizer email.
 The adapter maps that validated host to QLOO_BASE_URL and QLOO_TRUSTED_BASE_URL.

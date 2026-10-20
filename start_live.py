@@ -10,7 +10,6 @@ import warnings
 import importlib
 import threading
 import sys
-from qloo import Qloo
 from server import Server
 
 
@@ -76,14 +75,12 @@ def main():
     del key
     server = None
     try:
-        # A bounded credential/contract check; no raw diagnostics or credentials printed.
-        print("Checking event API access with one entity search…", flush=True)
-        payload = Qloo().search("The Matrix", "movie")
-        count = len(payload.get("results", []))
-        print(f"Live Qloo search succeeded ({count} candidates).", flush=True)
+        # Start independently of upstream availability. Requests can be retried in
+        # the UI without discarding the in-process credential after a timeout.
         os.environ["APP_ORIGIN"] = "http://127.0.0.1:8767"
         server = Server(("127.0.0.1", 8767))
         print("TasteProbe live server: http://127.0.0.1:8767", flush=True)
+        print("Qloo access is checked when you search in Live Qloo mode. Network errors do not stop this server.", flush=True)
         print("Leave this terminal running. Ctrl+C stops it and discards the in-process key.", flush=True)
         print("Local backend edits reload automatically; sessions reset after an update.", flush=True)
         watch_and_serve(server)
