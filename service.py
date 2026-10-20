@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from engine import Probe
 from fixtures import METADATA, PROFILES
 from qloo import Qloo, rank_profile
+from experiment import PairedStudy
 
 
 @dataclass
@@ -29,6 +30,7 @@ class Service:
         self.factory = client_factory
         self.sessions = {}
         self.verified = {}
+        self.insight_cache = {}
         self.max_sessions = max_sessions
         self.ttl = ttl
         self.lock = threading.Lock()
@@ -37,6 +39,7 @@ class Service:
         now = time.monotonic()
         self.sessions = {k: v for k, v in self.sessions.items() if now-v.created < self.ttl}
         self.verified = {k: v for k, v in self.verified.items() if now-v[1] < self.ttl}
+        self.insight_cache = {k: v for k, v in self.insight_cache.items() if now-v["stored"] < 600}
 
     def search(self, query, kind):
         client = self.factory()
@@ -53,11 +56,15 @@ class Service:
             for item in items[:10]:
                 if isinstance(item, dict) and isinstance(item.get("entity_id"), str) and isinstance(item.get("name"), str):
                     safe = {"entity_id": item["entity_id"], "name": item["name"], "kind": kind}
+                    if isinstance(item.get("properties"), dict):
+                        safe["release_year"] = item["properties"].get("release_year")
                     self.verified[safe["entity_id"]] = (safe, time.monotonic())
                     result.append(safe)
         return {"results": result, "source": "qloo-live"}
 
-    def create(self, mode="demo", seeds=None, study=False):
+    def create(self, mode="demo", seeds=None, study=False, experiment=False, consent=False):
+        if experiment and consent is not True:
+            raise ValueError("Explicit pilot consent is required")
         if mode == "demo":
             profiles, metadata, source, audit = copy.deepcopy(PROFILES), copy.deepcopy(METADATA), "synthetic-fixture", []
             evidence = {}
@@ -78,7 +85,21 @@ class Service:
                 names = {seed: self.verified[seed][0]["name"] for seed in seeds}
             client, profiles, metadata, evidence = self.factory(), {}, {}, {}
             for index, seed in enumerate(seeds):
-                response = client.insights([seed], take=50)
+                with self.lock:
+                    cached = self.insight_cache.get(seed)
+                    cached = copy.deepcopy(cached) if cached and time.monotonic()-cached["stored"] < 600 else None
+                if cached:
+                    response = cached["response"]
+                    client.audit.append({**cached["trace"], "cache_hit": True,
+                                         "cache_age_seconds": round(time.monotonic()-cached["stored"], 2)})
+                else:
+                    response = client.insights([seed], take=50)
+                    with self.lock:
+                        self.prune()
+                        if len(self.insight_cache) >= 200:
+                            self.insight_cache.pop(min(self.insight_cache, key=lambda k: self.insight_cache[k]["stored"]))
+                        self.insight_cache[seed] = {"stored": time.monotonic(), "response": copy.deepcopy(response),
+                                                    "trace": copy.deepcopy(client.audit[-1]) if client.audit else {"source": "qloo-live"}}
                 profile, _ = rank_profile(response)
                 # Known seed favorites must not be asked about or recommended.
                 anchor = f"Anchor {index+1}: {names[seed]}"
@@ -90,6 +111,14 @@ class Service:
                         "rank_utility": profile[identifier], "source": "qloo-live", "explainability": explanation}
                     metadata[identifier] = {"entity_id": identifier, "name": item.get("name", identifier),
                                             "subtitle": "Qloo movie candidate", "description": ""}
+                    properties = item.get("properties")
+                    if isinstance(properties, dict):
+                        description = properties.get("description")
+                        if isinstance(description, str):
+                            metadata[identifier]["description"] = description[:1200]
+                        year = properties.get("release_year")
+                        if isinstance(year, int):
+                            metadata[identifier]["subtitle"] = f"Film · {year} · Qloo metadata"
             source, audit = "qloo-live", client.audit
         else:
             raise ValueError("Mode must be demo or live")
@@ -98,7 +127,8 @@ class Service:
         order = sorted(set.intersection(*(set(p) for p in profiles.values())))
         if method == "random":
             secrets.SystemRandom().shuffle(order)
-        session = Session(probe, metadata, source, audit, evidence=evidence, method=method, order=order, study=study)
+        session = PairedStudy(profiles, metadata, source, evidence, audit, consent) if experiment else Session(
+            probe, metadata, source, audit, evidence=evidence, method=method, order=order, study=study)
         with self.lock:
             self.prune()
             if len(self.sessions) >= self.max_sessions:
@@ -129,6 +159,8 @@ class Service:
         return {"action": "ask", "entity_id": remaining[0], "label": probe.labels[remaining[0]]}
 
     def _state(self, identifier, session):
+        if isinstance(session, PairedStudy):
+            return session.state(identifier)
         probe = session.probe
         question = self._next(session)
         if question["action"] == "ask":
@@ -156,6 +188,8 @@ class Service:
     def answer(self, identifier, candidate, answer):
         session = self._get(identifier)
         with session.lock:
+            if isinstance(session, PairedStudy):
+                return session.answer(identifier, candidate, answer)
             question = self._next(session)
             if question["action"] != "ask" or candidate != question["entity_id"]:
                 raise ValueError("This question is no longer current; refresh the session")

@@ -14,7 +14,7 @@ entity search, two real movie ranking requests, three adaptive questions, skip
 handling, a final shortlist and JSON export passed on October 20, 2026.
 See `docs/LIVE_VERIFICATION.md` for the exact scenario and payload findings.
 
-33 automated tests pass locally. Human recommendation quality is not established.
+37 automated tests pass locally. Human recommendation quality is not established.
 The project still needs an externally hosted demo and consenting user evaluation;
 no prize or improvement claim is made.
 
@@ -96,7 +96,7 @@ Only shared candidates are eligible, which can limit coverage and novelty.
 ## Evidence and answer correction
 
 Each recommendation retains separate per-anchor rank evidence. Live recommendation
-requests now ask only for entity IDs and names, avoiding unused payload data. In normal discovery, expandable panels show how yes/no could change the
+requests retain IDs, names, and bounded Qloo descriptions and release years when available. Rankings are cached for ten minutes to reduce repeated upstream calls. In normal discovery, expandable panels show how yes/no could change the
 shortlist without changing session state. Users can correct the last answer; weights
 are rebuilt from the retained history. Correction counts are included in exports.
 Research sessions disable previews and corrections to avoid changing the comparison.
@@ -104,22 +104,21 @@ Qloo request traces include retrieval timestamps and durations, excluding creden
 
 ## Evaluation
 
-The optional research flow randomly assigns adaptive, fixed, random, or immediate
-recommendation strategies. Adaptive/fixed/random have the same maximum three-question
-budget; immediate is a zero-question baseline. Strategy labels stay out of the rating
-flow. This is a pilot aid, not a validated blinded study platform: participants can
-inspect network responses, and the sessions are not identity-linked.
-
-Export a completed session after rating familiar final suggestions, then run:
+The optional paired pilot requires explicit adult consent. Each participant completes
+adaptive and fixed question rounds in randomized order, using the same retrieved
+Qloo snapshot. A disjoint holdout pool supplies a mixed final shortlist with method
+labels hidden in the interface. Each arm asks at most three questions. Participants
+rate familiar films and voluntarily export the result; no research database receives it.
 
 ```text
-python analyze.py session1.json session2.json
+python analyze_paired.py session1.json session2.json
 ```
 
-The analyzer separates synthetic and live sources, rejects invalid ratings, ignores
-exact duplicate exports, and reports descriptive session-level summaries. Repeated
-people cannot be detected. User-editable exports are not tamper-proof research data.
-Do not report causal benefit or statistical significance from this output.
+The analyzer deduplicates pilot IDs, rejects labeled scripted QA, separates live and
+synthetic evidence, and reports descriptive paired differences and rating coverage.
+Repeated people, selective familiarity ratings, carryover, and editable exports remain
+limitations. This is an exploratory pilot, not proof of improved recommendations.
+The older single-strategy API and `analyze.py` remain available for compatibility.
 
 `benchmark.py` and `benchmark-results.json` are a reproducible, model-matched synthetic
 sanity check. The simulated responder follows the model family used by the agent.
@@ -141,7 +140,9 @@ docker build -t tasteprobe .
 docker run --rm -p 8080:8080 tasteprobe
 ```
 
-For a host with Docker support, use the supplied Dockerfile, expose its PORT and
+A Render Blueprint is included in `render.yaml`; see `docs/DEPLOYMENT.md`.
+Render supplies the public origin automatically.
+For another host with Docker support, use the supplied Dockerfile, expose its PORT and
 configure APP_ORIGIN to the exact public HTTPS origin. Add Qloo credentials only
 through the host's secret environment. Keep one instance for the memory session store.
 The HTTP server is intended for a small hackathon demo behind a trusted TLS reverse
@@ -156,7 +157,7 @@ been completed. The full Python app cannot run on static-only hosting.
 
 - GET /api/config: demo/live availability, no credentials.
 - POST /api/search: query and kind, returns confirmed-choice candidates.
-- POST /api/session: mode, seeds, optional study flag; returns a capability session ID.
+- POST /api/session: mode, seeds, optional experiment and explicit consent flags; returns a capability session ID.
 - POST /api/answer: session_id, current entity_id, answer (like/dislike/skip).
 - POST /api/state: session_id, returns current session.
 - POST /api/delete: session_id, deletes session.

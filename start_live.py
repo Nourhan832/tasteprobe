@@ -19,7 +19,7 @@ def watch_and_serve(server):
     Dev-only and bound to loopback. In-flight sessions reset after backend edits.
     """
     root = Path(__file__).resolve().parent
-    modules = ("engine", "fixtures", "qloo", "service", "server")
+    modules = ("engine", "fixtures", "qloo", "experiment", "service", "server")
     def versions():
         return tuple((root / (name+".py")).stat().st_mtime_ns for name in modules)
     current = versions()

@@ -82,7 +82,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         # Same-origin JSON endpoints. No CORS and no form-encoded mutations.
         origin = self.headers.get("Origin")
-        expected = os.environ.get("APP_ORIGIN") or "http://" + self.headers.get("Host", "")
+        expected = os.environ.get("APP_ORIGIN") or os.environ.get("RENDER_EXTERNAL_URL") or "http://" + self.headers.get("Host", "")
         if origin and origin != expected:
             return self.respond(403, {"error": "Cross-origin requests are not allowed"})
         if self.headers.get("Content-Type", "").split(";")[0] != "application/json":
@@ -115,7 +115,10 @@ class Handler(BaseHTTPRequestHandler):
                 study = body.get("study", False)
                 if not isinstance(study, bool):
                     raise ValueError("Study must be true or false")
-                data = service.create(body.get("mode", "demo"), body.get("seeds"), study)
+                experiment, consent = body.get("experiment", False), body.get("consent", False)
+                if type(experiment) is not bool or type(consent) is not bool:
+                    raise ValueError("Experiment and consent must be true or false")
+                data = service.create(body.get("mode", "demo"), body.get("seeds"), study, experiment, consent)
             elif self.path == "/api/answer":
                 data = service.answer(body.get("session_id"), body.get("entity_id"), body.get("answer"))
             elif self.path == "/api/state":

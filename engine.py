@@ -17,6 +17,8 @@ class Probe:
     profiles: dict[str, dict[str, float]]
     labels: dict[str, str]
     budget: int = 3
+    question_pool: set[str] | None = None
+    recommendation_pool: set[str] | None = None
     weights: list[float] = field(init=False)
     asked: set[str] = field(default_factory=set)
     history: list[dict] = field(default_factory=list)
@@ -51,6 +53,8 @@ class Probe:
         # Only compare entities observed under every hypothesis: missing != dislike.
         common = set.intersection(*(set(p) for p in self.profiles.values()))
         options = common - self.asked
+        if self.question_pool is not None:
+            options &= self.question_pool
         if not options:
             return {"action": "recommend", "reason": "No unasked question has complete evidence"}
         candidate = min(options, key=lambda c: (-self.gain(c), c))
@@ -83,6 +87,8 @@ class Probe:
 
     def recommendations(self, take=5):
         common = set.intersection(*(set(p) for p in self.profiles.values())) - self.asked
+        if self.recommendation_pool is not None:
+            common &= self.recommendation_pool
         result = []
         for candidate in common:
             score = sum(w*p[candidate] for w, p in zip(self.weights, self.profiles.values()))

@@ -12,6 +12,23 @@ from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 
 
+def compact_entity(item):
+    """Keep bounded, source-provided display metadata; never invent a synopsis."""
+    result = {"entity_id": item.get("entity_id"), "name": item.get("name")}
+    properties = item.get("properties")
+    if isinstance(properties, dict):
+        metadata = {}
+        description = properties.get("description")
+        if isinstance(description, str):
+            metadata["description"] = description[:1200]
+        year = properties.get("release_year")
+        if isinstance(year, (str, int)) and str(year).isdigit() and 1870 <= int(year) <= 2100:
+            metadata["release_year"] = int(year)
+        if metadata:
+            result["properties"] = metadata
+    return result
+
+
 class Qloo:
     def __init__(self):
         self.key = os.environ.get("QLOO_API_KEY")
@@ -85,8 +102,7 @@ class Qloo:
             raise ValueError("Unexpected harness JSON: expected entity array")
         # Some event responses do not honor the fields parameter. Retain only
         # the identity fields actually used, rather than keeping rich raw data.
-        return [{"entity_id": item.get("entity_id"), "name": item.get("name")}
-                for item in data if isinstance(item, dict)]
+        return [compact_entity(item) for item in data if isinstance(item, dict)]
 
     def get(self, route, params):
         req = Request(self.host + route + "?" + urlencode(params),
@@ -114,12 +130,12 @@ class Qloo:
         ids = [str(uuid.UUID(value)) for value in entity_ids]
         if self.transport == "harness":
             data = self.harness("insights", ["--type", kind, "--signal-entities", ",".join(ids),
-                                "--take", str(take), "--fields", "entity_id,name"])
+                                "--take", str(take), "--fields", "entity_id,name,properties.description,properties.release_year"])
             self.record({"source": "qloo-live", "transport": "official-harness", "route": "/v2/insights", "seeds": ids, "take": take})
             return {"results": {"entities": data}}
         return self.get("/v2/insights", {"filter.type": "urn:entity:" + kind,
                         "signal.interests.entities": ",".join(ids), "take": take,
-                        "fields": "entity_id,name"})
+                        "fields": "entity_id,name,properties.description,properties.release_year"})
 
 
 def rank_profile(response):

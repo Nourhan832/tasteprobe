@@ -60,7 +60,7 @@ class QlooTests(unittest.TestCase):
             Qloo().insights(["00000000-0000-0000-0000-000000000001"])
             args = run.call_args.args[0]
             self.assertIn("--fields", args)
-            self.assertEqual(args[args.index("--fields")+1], "entity_id,name")
+            self.assertEqual(args[args.index("--fields")+1], "entity_id,name,properties.description,properties.release_year")
             self.assertNotIn("--params", args)
 
     def test_rich_event_payload_is_discarded_after_parsing(self):
@@ -71,3 +71,11 @@ class QlooTests(unittest.TestCase):
             client = Qloo()
             self.assertEqual(client.search("x"), {"results": [{"entity_id": "x", "name": "X"}]})
             self.assertGreater(client.audit[0]["upstream_response_characters"], 2_000_000)
+
+    def test_display_metadata_is_bounded_and_source_provided(self):
+        from qloo import compact_entity
+        item = compact_entity({"entity_id": "x", "name": "X", "properties": {
+            "description": "a"*2000, "release_year": "1999", "unused": "not retained"}})
+        self.assertEqual(len(item["properties"]["description"]), 1200)
+        self.assertEqual(item["properties"]["release_year"], 1999)
+        self.assertNotIn("unused", item["properties"])
