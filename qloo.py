@@ -5,6 +5,7 @@ import uuid
 import shutil
 import subprocess
 import time
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlencode, urlparse
@@ -49,11 +50,30 @@ class Qloo:
         try:
             started = time.perf_counter()
             result = subprocess.run(prefix+["api", command]+args+["--json"],
-                                    capture_output=True, text=True, timeout=45, shell=False)
+                                    capture_output=True, encoding="utf-8", errors="replace", timeout=45, shell=False,
+                                    env={**os.environ, "QLOO_BASE_URL": self.host,
+                                         "QLOO_TRUSTED_BASE_URL": self.host})
             self.last_request_ms = round((time.perf_counter()-started)*1000, 2)
         except subprocess.TimeoutExpired:
             raise TimeoutError("Qloo harness timed out") from None
         if result.returncode:
+            try:
+                error = json.loads(result.stdout)
+            except (ValueError, TypeError):
+                error = {}
+            code = error.get("code") if isinstance(error, dict) else None
+            upstream_message = error.get("message", "") if isinstance(error, dict) else ""
+            if isinstance(upstream_message, str) and re.search(r"\b401\b", upstream_message):
+                code = "AUTH_FAILED"
+            safe = {
+                "AUTH_FAILED": "Qloo rejected authentication. Check that the complete event key was entered without quotes.",
+                "CONFIG_ERROR": "Qloo harness configuration is invalid. Check the assigned host and installed runtime.",
+                "API_ERROR": "Qloo reported an API error. Check event quota, server availability and account access.",
+                "BAD_USAGE": "The installed Qloo harness rejected the command options.",
+                "NOT_FOUND": "Qloo did not find the requested resource."
+            }
+            if code in safe:
+                raise RuntimeError(f"{code}: {safe[code]} No fallback was used.")
             raise RuntimeError("Qloo harness failed. Check event authentication, quota, and assigned API access. No fallback was used.")
         if len(result.stdout) > 2_000_000:
             raise ValueError("Qloo harness response exceeded size limit")
@@ -88,12 +108,12 @@ class Qloo:
         ids = [str(uuid.UUID(value)) for value in entity_ids]
         if self.transport == "harness":
             data = self.harness("insights", ["--type", kind, "--signal-entities", ",".join(ids),
-                                "--take", str(take), "--params", '{"feature.explainability":true}'])
+                                "--take", str(take), "--fields", "entity_id,name"])
             self.record({"source": "qloo-live", "transport": "official-harness", "route": "/v2/insights", "seeds": ids, "take": take})
             return {"results": {"entities": data}}
         return self.get("/v2/insights", {"filter.type": "urn:entity:" + kind,
                         "signal.interests.entities": ",".join(ids), "take": take,
-                        "feature.explainability": "true"})
+                        "fields": "entity_id,name"})
 
 
 def rank_profile(response):

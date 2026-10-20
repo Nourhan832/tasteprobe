@@ -19,6 +19,8 @@ class QlooTests(unittest.TestCase):
             self.assertEqual(args[:3], ["/usr/bin/qloo", "api", "search"])
             self.assertNotIn("test-only-not-a-real-key", " ".join(args))
             self.assertFalse(run.call_args.kwargs["shell"])
+            self.assertEqual(run.call_args.kwargs["env"]["QLOO_BASE_URL"], "https://api.qloo.com")
+            self.assertEqual(run.call_args.kwargs["env"]["QLOO_TRUSTED_BASE_URL"], "https://api.qloo.com")
             self.assertEqual(data["results"][0]["name"], "X")
             self.assertIn("retrieved_at", client.audit[0])
             self.assertGreaterEqual(client.audit[0]["duration_ms"], 0)
@@ -37,3 +39,26 @@ class QlooTests(unittest.TestCase):
         with self.environment():
             with self.assertRaises(ValueError):
                 Qloo().insights(["not-a-uuid"])
+
+    def test_hackathon_host_is_trusted_only_after_allowlist_validation(self):
+        with self.environment({"QLOO_API_HOST": "https://hackathon.api.qloo.com"}), patch("qloo.shutil.which", return_value="/usr/bin/qloo"), patch("qloo.subprocess.run") as run:
+            run.return_value = subprocess.CompletedProcess([], 0, '[]', '')
+            Qloo().search("x")
+            self.assertEqual(run.call_args.kwargs["env"]["QLOO_TRUSTED_BASE_URL"], "https://hackathon.api.qloo.com")
+
+    def test_safe_auth_diagnostic_excludes_upstream_message(self):
+        with self.environment(), patch("qloo.shutil.which", return_value="/usr/bin/qloo"), patch("qloo.subprocess.run") as run:
+            run.return_value = subprocess.CompletedProcess([], 3, '{"error":true,"code":"AUTH_FAILED","message":"private diagnostic"}', '')
+            with self.assertRaises(RuntimeError) as ctx:
+                Qloo().search("x")
+            self.assertIn("AUTH_FAILED", str(ctx.exception))
+            self.assertNotIn("private diagnostic", str(ctx.exception))
+
+    def test_insights_requests_only_fields_used_by_the_policy(self):
+        with self.environment(), patch("qloo.shutil.which", return_value="/usr/bin/qloo"), patch("qloo.subprocess.run") as run:
+            run.return_value = subprocess.CompletedProcess([], 0, '[{"entity_id":"x","name":"X"}]', '')
+            Qloo().insights(["00000000-0000-0000-0000-000000000001"])
+            args = run.call_args.args[0]
+            self.assertIn("--fields", args)
+            self.assertEqual(args[args.index("--fields")+1], "entity_id,name")
+            self.assertNotIn("--params", args)

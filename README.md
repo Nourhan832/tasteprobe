@@ -10,8 +10,10 @@ exhausted. The browser talks to a Python backend; credentials stay server-side.
 ## Status
 
 Working backend-connected synthetic demo; official Qloo harness adapter implemented
-and tested with mocked responses. Live authentication, API behavior and human
-recommendation quality are **not yet verified**. No prize or improvement claim is made.
+and tested with mocked responses. Live authentication and movie entity search now
+work on the event server. Full recommendation retrieval hit a response-size limit;
+a minimal-field request fix is implemented and awaiting a restarted live check.
+Human recommendation quality is **not yet verified**. No prize or improvement claim is made.
 The app is not submission-ready until live Qloo access and external hosting work.
 
 ## Run locally
@@ -35,6 +37,17 @@ python stress_benchmark.py
 ```
 
 ## Live Qloo setup
+
+For this workspace, `python start_live.py` opens a hidden-input prompt for the existing
+event key, checks one Qloo entity search, then serves the app at
+http://127.0.0.1:8767 . The key stays in the launcher process environment and
+is removed when it exits; it is not written to source or a .env file.
+The launcher selects https://hackathon.api.qloo.com from the organizer email.
+The adapter maps that validated host to QLOO_BASE_URL and QLOO_TRUSTED_BASE_URL.
+The launcher now reloads backend edits while keeping the existing key in process
+memory, so future code updates do not require entering it again. This development
+mode is loopback-only, and backend updates reset active discovery sessions.
+
 
 Request event access from https://qloo.devpost.com/resources . The current event
 supports the official harness: https://github.com/qloo/qloo-hackathon-kit .
@@ -78,8 +91,8 @@ Only shared candidates are eligible, which can limit coverage and novelty.
 
 ## Evidence and answer correction
 
-Each recommendation now retains separate per-anchor rank evidence and explainability
-metadata. In normal discovery, expandable panels show how yes/no could change the
+Each recommendation retains separate per-anchor rank evidence. Live recommendation
+requests now ask only for entity IDs and names, avoiding unused payload data. In normal discovery, expandable panels show how yes/no could change the
 shortlist without changing session state. Users can correct the last answer; weights
 are rebuilt from the retained history. Correction counts are included in exports.
 Research sessions disable previews and corrections to avoid changing the comparison.

@@ -19,3 +19,11 @@ human feedback. These cannot be represented as completed by an offline prototype
 
 An earlier Sites publication attempt was rejected by session approval policy at the
 helper input step. The registered static Site is not a live full-app deployment.
+
+## October 20 live integration
+
+Event authentication and movie entity search succeeded using the user-entered key,
+which never entered chat or source files. The first full retrieval exceeded the
+2 MB response guard. The adapter now requests only entity_id and name; 30 local
+tests pass. Full live retrieval needs a restarted launcher before verification.
+The local launcher now supports backend reloads without credential re-entry.
