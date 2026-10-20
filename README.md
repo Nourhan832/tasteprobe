@@ -9,12 +9,14 @@ exhausted. The browser talks to a Python backend; credentials stay server-side.
 
 ## Status
 
-Working backend-connected synthetic demo; official Qloo harness adapter implemented
-and tested with mocked responses. Live authentication and movie entity search now
-work on the event server. Full recommendation retrieval hit a response-size limit;
-a minimal-field request fix is implemented and awaiting a restarted live check.
-Human recommendation quality is **not yet verified**. No prize or improvement claim is made.
-The app is not submission-ready until live Qloo access and external hosting work.
+Working backend-connected demo and **one verified live Qloo walkthrough**. Event
+entity search, two real movie ranking requests, three adaptive questions, skip
+handling, a final shortlist and JSON export passed on October 20, 2026.
+See `docs/LIVE_VERIFICATION.md` for the exact scenario and payload findings.
+
+33 automated tests pass locally. Human recommendation quality is not established.
+The project still needs an externally hosted demo and consenting user evaluation;
+no prize or improvement claim is made.
 
 ## Run locally
 

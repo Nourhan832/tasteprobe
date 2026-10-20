@@ -28,10 +28,12 @@ class Qloo:
             raise ValueError("Configure the event credential on the server or run qloo setup --qloo")
         self.audit = []
         self.last_request_ms = None
+        self.last_response_characters = None
 
     def record(self, entry):
         self.audit.append({**entry, "retrieved_at": datetime.now(timezone.utc).isoformat(),
-                           "duration_ms": self.last_request_ms})
+                           "duration_ms": self.last_request_ms,
+                           "upstream_response_characters": self.last_response_characters})
 
     def harness(self, command, args):
         entry = os.environ.get("QLOO_HARNESS_ENTRY")
@@ -75,12 +77,16 @@ class Qloo:
             if code in safe:
                 raise RuntimeError(f"{code}: {safe[code]} No fallback was used.")
             raise RuntimeError("Qloo harness failed. Check event authentication, quota, and assigned API access. No fallback was used.")
-        if len(result.stdout) > 2_000_000:
-            raise ValueError("Qloo harness response exceeded size limit")
+        self.last_response_characters = len(result.stdout)
+        if self.last_response_characters > 32_000_000:
+            raise ValueError("Qloo harness response exceeded the bounded 32 MB payload limit")
         data = json.loads(result.stdout)
         if not isinstance(data, list):
             raise ValueError("Unexpected harness JSON: expected entity array")
-        return data
+        # Some event responses do not honor the fields parameter. Retain only
+        # the identity fields actually used, rather than keeping rich raw data.
+        return [{"entity_id": item.get("entity_id"), "name": item.get("name")}
+                for item in data if isinstance(item, dict)]
 
     def get(self, route, params):
         req = Request(self.host + route + "?" + urlencode(params),

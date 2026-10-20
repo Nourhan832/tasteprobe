@@ -62,3 +62,12 @@ class QlooTests(unittest.TestCase):
             self.assertIn("--fields", args)
             self.assertEqual(args[args.index("--fields")+1], "entity_id,name")
             self.assertNotIn("--params", args)
+
+    def test_rich_event_payload_is_discarded_after_parsing(self):
+        import json
+        payload = [{"entity_id": "x", "name": "X", "unused": "a"*2_100_000}]
+        with self.environment(), patch("qloo.shutil.which", return_value="/usr/bin/qloo"), patch("qloo.subprocess.run") as run:
+            run.return_value = subprocess.CompletedProcess([], 0, json.dumps(payload), '')
+            client = Qloo()
+            self.assertEqual(client.search("x"), {"results": [{"entity_id": "x", "name": "X"}]})
+            self.assertGreater(client.audit[0]["upstream_response_characters"], 2_000_000)

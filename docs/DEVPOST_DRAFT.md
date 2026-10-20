@@ -32,8 +32,9 @@ for competing taste anchors. Those rankings shape the question itself, not simpl
 the wording of a final response. An LLM alone is not substituted for missing Qloo data.
 
 ## What is established today
-The backend-connected synthetic workflow works and its automated tests pass.
-The live adapter has mocked integration tests; real API execution is pending access.
+A full live movie walkthrough passed on October 20, 2026, including real Qloo
+rankings, adaptive questions, evidence and JSON export. The project has 33 passing
+local automated tests. See LIVE_VERIFICATION.md for the exact scripted scenario.
 No real-user recommendation uplift has been established.
 
 ## Challenges
@@ -43,7 +44,7 @@ response likelihood model remain heuristics. Limited shared coverage is a visibl
 failure mode rather than something the app hides.
 
 ## Next
-Verify the event credential and live contract, publish an externally accessible
+Extend live scenario coverage, publish an externally accessible
 functional demo, then run a consenting pilot with equal budgets and user-rated
 outcomes. Update this draft with actual evidence and deployment links before submitting.
 
